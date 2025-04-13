@@ -1,0 +1,52 @@
+{
+    "title": "Targeting Engine Dashboard",
+    "panels": [
+      {
+        "title": "HTTP Requests",
+        "type": "graph",
+        "targets": [{
+          "expr": "rate(http_requests_total[1m])",
+          "legendFormat": "{{method}} {{path}} ({{status}})"
+        }],
+        "gridPos": {"x": 0, "y": 0, "w": 24, "h": 8}
+      },
+      {
+        "title": "Request Latency",
+        "type": "heatmap",
+        "targets": [{
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le, method, path))",
+          "legendFormat": "{{method}} {{path}}"
+        }],
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8}
+      },
+      {
+        "title": "Cache Performance",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(cache_hits_total[1m])",
+            "legendFormat": "Hits"
+          },
+          {
+            "expr": "rate(cache_misses_total[1m])",
+            "legendFormat": "Misses"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8}
+      },
+      {
+        "title": "Active Campaigns",
+        "type": "gauge",
+        "targets": [{
+          "expr": "campaigns_active_total"
+        }],
+        "gridPos": {"x": 0, "y": 16, "w": 8, "h": 8}
+      }
+    ],
+    "templating": {
+      "list": [{
+        "name": "instance",
+        "query": "label_values(up, instance)"
+      }]
+    }
+  }

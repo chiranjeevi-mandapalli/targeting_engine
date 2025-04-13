@@ -9,6 +9,9 @@ import (
 	"syscall"
 	"targeting-engine/internal/campaign"
 	"targeting-engine/internal/delivery"
+	"targeting-engine/internal/health"
+	"targeting-engine/internal/monitoring"
+	"targeting-engine/internal/seed"
 	"targeting-engine/internal/targeting"
 	"targeting-engine/pkg/config"
 	"targeting-engine/pkg/logging"
@@ -18,6 +21,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -37,15 +41,28 @@ func main() {
 	}
 	defer db.Close()
 
+	// Seed database if enabled
+	if cfg.Database.Seed {
+		seedDatabase(db, logger)
+	}
+
+	// Initialize monitoring
+	metrics := monitoring.Init()
+	logger.Info().Msg("Monitoring initialized")
+
 	// Initialize Redis
 	redisClient := initRedis(cfg, logger)
 	defer redisClient.Close()
 
+	// Initialize health service
+	healthService := health.NewHealthService(db.DB, redisClient)
+	logger.Info().Msg("Health checks initialized")
+
 	// Initialize services
-	campaignSvc, targetingSvc := initServices(db, redisClient, cfg, logger)
+	campaignSvc, targetingSvc := initServices(db, redisClient, cfg, logger, metrics)
 
 	// Create HTTP server
-	server := initHTTPServer(cfg, campaignSvc, targetingSvc, logger)
+	server := initHTTPServer(cfg, campaignSvc, targetingSvc, healthService, logger, metrics)
 
 	// Start server in goroutine
 	go func() {
@@ -87,6 +104,24 @@ func initDatabase(cfg *config.Config, logger *logging.Logger) (*sqlx.DB, error) 
 	return db, nil
 }
 
+func seedDatabase(db *sqlx.DB, logger *logging.Logger) {
+	logger.Info().Msg("Starting database seeding...")
+
+	startTime := time.Now()
+	seeder := seed.NewSeeder(db.DB)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := seeder.SeedAll(ctx); err != nil {
+		logger.Error().Err(err).Msg("Database seeding failed")
+		return
+	}
+
+	logger.Info().
+		Str("duration", time.Since(startTime).String()).
+		Msg("Database seeded successfully")
+}
+
 func initRedis(cfg *config.Config, logger *logging.Logger) *redis.Client {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", cfg.Redis.Host, cfg.Redis.Port),
@@ -103,7 +138,7 @@ func initRedis(cfg *config.Config, logger *logging.Logger) *redis.Client {
 	return rdb
 }
 
-func initServices(db *sqlx.DB, rdb *redis.Client, cfg *config.Config, logger *logging.Logger) (*campaign.Service, *targeting.Evaluator) {
+func initServices(db *sqlx.DB, rdb *redis.Client, cfg *config.Config, logger *logging.Logger, metrics *monitoring.Metrics) (*campaign.Service, *targeting.Evaluator) {
 	// Initialize repositories
 	campaignRepo := campaign.NewPostgresRepository(db)
 	ruleRepo := targeting.NewPostgresRuleRepository(db)
@@ -120,17 +155,28 @@ func initServices(db *sqlx.DB, rdb *redis.Client, cfg *config.Config, logger *lo
 	return campaignSvc, targetingSvc
 }
 
-func initHTTPServer(cfg *config.Config, campaignSvc *campaign.Service, targetingSvc *targeting.Evaluator, logger *logging.Logger) *http.Server {
+func initHTTPServer(cfg *config.Config, campaignSvc *campaign.Service, targetingSvc *targeting.Evaluator, healthService *health.HealthService, logger *logging.Logger, metrics *monitoring.Metrics) *http.Server {
 	// Create delivery service
 	deliverySvc := delivery.NewService(campaignSvc, targetingSvc)
 
 	// Create router
 	router := mux.NewRouter()
-	router.Use(loggingMiddleware(logger))
+
+	// Add middleware
+	router.Use(
+		loggingMiddleware(logger),
+		monitoring.MetricsMiddleware(metrics),
+	)
 
 	// Register handlers
 	router.PathPrefix("/v1/campaigns").Handler(campaign.MakeHTTPHandler(campaignSvc))
 	router.Handle("/v1/delivery", delivery.MakeHTTPHandler(deliverySvc))
+
+	// Add monitoring endpoints
+	router.Handle("/metrics", promhttp.Handler())
+
+	// Add health endpoints
+	router.Handle("/healthz", health.MakeHandler(healthService))
 
 	return &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),

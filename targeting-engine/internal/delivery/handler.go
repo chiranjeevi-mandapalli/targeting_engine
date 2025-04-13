@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func MakeHTTPHandler(s *Service) http.Handler {
+func MakeHTTPHandler(s Service) http.Handler {
 	r := mux.NewRouter()
 
 	deliveryHandler := httptransport.NewServer(
@@ -23,7 +23,7 @@ func MakeHTTPHandler(s *Service) http.Handler {
 	return r
 }
 
-func makeDeliveryEndpoint(s *Service) endpoint.Endpoint {
+func makeDeliveryEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(Request)
 		return s.GetMatchingCampaigns(ctx, req)
@@ -45,7 +45,6 @@ func decodeDeliveryRequest(_ context.Context, r *http.Request) (interface{}, err
 func encodeDeliveryResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	resp := response.(Response)
 
-	// Set appropriate status code
 	switch {
 	case resp.Error == ErrMissingApp.Error() ||
 		resp.Error == ErrMissingCountry.Error() ||

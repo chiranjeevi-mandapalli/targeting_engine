@@ -1,8 +1,6 @@
 package delivery
 
-import (
-	"errors"
-)
+import "errors"
 
 type Request struct {
 	App     string `json:"app"`

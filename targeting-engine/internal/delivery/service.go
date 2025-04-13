@@ -6,24 +6,30 @@ import (
 	"targeting-engine/internal/targeting"
 )
 
-type Service struct {
+// Service defines the interface for the delivery service
+type Service interface {
+	GetMatchingCampaigns(ctx context.Context, req Request) (Response, error)
+}
+
+// serviceImpl implements the Service interface
+type serviceImpl struct {
 	campaignSvc *campaign.Service
 	targeting   *targeting.Evaluator
 }
 
-func NewService(campaignSvc *campaign.Service, targeting *targeting.Evaluator) *Service {
-	return &Service{
+// NewService creates a new service instance
+func NewService(campaignSvc *campaign.Service, targeting *targeting.Evaluator) Service {
+	return &serviceImpl{
 		campaignSvc: campaignSvc,
 		targeting:   targeting,
 	}
 }
 
-func (s *Service) GetMatchingCampaigns(ctx context.Context, req Request) (Response, error) {
+func (s *serviceImpl) GetMatchingCampaigns(ctx context.Context, req Request) (Response, error) {
 	if err := req.Validate(); err != nil {
 		return Response{Error: err.Error()}, err
 	}
 
-	// Get all active campaigns
 	activeCampaigns, err := s.campaignSvc.GetActiveCampaigns(ctx)
 	if err != nil {
 		return Response{Error: err.Error()}, err
@@ -33,25 +39,21 @@ func (s *Service) GetMatchingCampaigns(ctx context.Context, req Request) (Respon
 		return Response{Error: ErrNoCampaigns.Error()}, ErrNoCampaigns
 	}
 
-	// Get campaign IDs for targeting evaluation
 	campaignIDs := make([]string, len(activeCampaigns))
 	for i, c := range activeCampaigns {
 		campaignIDs[i] = c.ID
 	}
 
-	// Evaluate which campaigns match the targeting rules
 	matchedIDs, err := s.targeting.Evaluate(ctx, req.App, req.Country, req.OS, campaignIDs)
 	if err != nil {
 		return Response{Error: err.Error()}, err
 	}
 
-	// Get full campaign details for matched IDs
 	matchedCampaigns, err := s.campaignSvc.GetCampaignsByIDs(ctx, matchedIDs)
 	if err != nil {
 		return Response{Error: err.Error()}, err
 	}
 
-	// Convert to API response format
 	response := Response{
 		Campaigns: make([]CampaignResponse, len(matchedCampaigns)),
 	}
