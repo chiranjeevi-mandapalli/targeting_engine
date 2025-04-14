@@ -38,7 +38,6 @@ func main() {
 	}
 	defer db.Close()
 
-	// Seed database if enabled
 	if cfg.Database.Seed {
 		seedDatabase(db, logger)
 	}
