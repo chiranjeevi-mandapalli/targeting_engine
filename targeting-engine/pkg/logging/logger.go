@@ -11,7 +11,6 @@ type Logger struct {
 }
 
 func New(serviceName string) *Logger {
-	// Configure console output with pretty printing
 	output := zerolog.ConsoleWriter{
 		Out:        os.Stdout,
 		TimeFormat: "2006-01-02 15:04:05",
@@ -26,7 +25,6 @@ func New(serviceName string) *Logger {
 	return &Logger{logger}
 }
 
-// Properly implemented log level methods
 func (l *Logger) Debug() *zerolog.Event {
 	return l.Logger.Debug()
 }
@@ -47,7 +45,6 @@ func (l *Logger) Fatal() *zerolog.Event {
 	return l.Logger.Fatal()
 }
 
-// Convenience methods
 func (l *Logger) LogError(err error, msg string) {
 	l.Error().Err(err).Msg(msg)
 }
@@ -57,7 +54,6 @@ func (l *Logger) LogFatal(err error, msg string) {
 	os.Exit(1)
 }
 
-// Context management
 func (l *Logger) With() zerolog.Context {
 	return l.Logger.With()
 }

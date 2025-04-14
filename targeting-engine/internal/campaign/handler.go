@@ -29,7 +29,6 @@ func MakeHTTPHandler(s *Service) http.Handler {
 	return r
 }
 
-// Endpoints
 func makeGetCampaignEndpoint(s *Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(getCampaignRequest)
@@ -43,12 +42,10 @@ func makeGetActiveCampaignsEndpoint(s *Service) endpoint.Endpoint {
 	}
 }
 
-// Request/Response types
 type getCampaignRequest struct {
 	ID string
 }
 
-// Decoders
 func decodeGetCampaignRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	vars := mux.Vars(r)
 	id, ok := vars["id"]
@@ -62,7 +59,6 @@ func decodeGetActiveCampaignsRequest(_ context.Context, r *http.Request) (interf
 	return nil, nil
 }
 
-// Encoder
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	return json.NewEncoder(w).Encode(response)

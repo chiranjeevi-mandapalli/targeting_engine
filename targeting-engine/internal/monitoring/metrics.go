@@ -5,7 +5,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-// Metrics contains all monitoring metrics
 type Metrics struct {
 	HTTPRequests       *prometheus.CounterVec
 	HTTPRequestLatency *prometheus.HistogramVec
@@ -14,7 +13,6 @@ type Metrics struct {
 	ActiveCampaigns    prometheus.Gauge
 }
 
-// NewMetrics creates and registers all metrics
 func NewMetrics() *Metrics {
 	return &Metrics{
 		HTTPRequests: promauto.NewCounterVec(
@@ -54,8 +52,6 @@ func NewMetrics() *Metrics {
 		),
 	}
 }
-
-// Register custom metrics
 func Init() *Metrics {
 	return NewMetrics()
 }

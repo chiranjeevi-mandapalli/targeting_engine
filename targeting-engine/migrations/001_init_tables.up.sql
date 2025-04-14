@@ -1,7 +1,5 @@
--- Enable UUID extension if needed
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Campaigns table
 CREATE TABLE campaigns (
     id VARCHAR(255) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -13,7 +11,6 @@ CREATE TABLE campaigns (
     CONSTRAINT valid_url CHECK (image_url ~ '^https?://[^/]+')
 );
 
--- Targeting rules table
 CREATE TABLE targeting_rules (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     campaign_id VARCHAR(255) NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
@@ -31,12 +28,10 @@ CREATE TABLE targeting_rules (
     )
 );
 
--- Optimize read queries
 CREATE INDEX idx_campaigns_status ON campaigns(status);
 CREATE INDEX idx_targeting_rules_campaign ON targeting_rules(campaign_id);
 CREATE INDEX idx_targeting_rules_dimension ON targeting_rules(dimension);
 
--- Update timestamp trigger
 CREATE OR REPLACE FUNCTION update_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN

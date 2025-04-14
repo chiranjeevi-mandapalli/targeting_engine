@@ -25,16 +25,13 @@ import (
 )
 
 func main() {
-	// Initialize logger
 	logger := logging.New("targeting-engine")
 
-	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to load configuration")
 	}
 
-	// Initialize database connection
 	db, err := initDatabase(cfg, logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to initialize database")
@@ -46,25 +43,19 @@ func main() {
 		seedDatabase(db, logger)
 	}
 
-	// Initialize monitoring
 	metrics := monitoring.Init()
 	logger.Info().Msg("Monitoring initialized")
 
-	// Initialize Redis
 	redisClient := initRedis(cfg, logger)
 	defer redisClient.Close()
 
-	// Initialize health service
 	healthService := health.NewHealthService(db.DB, redisClient)
 	logger.Info().Msg("Health checks initialized")
 
-	// Initialize services
 	campaignSvc, targetingSvc := initServices(db, redisClient, cfg, logger, metrics)
 
-	// Create HTTP server
 	server := initHTTPServer(cfg, campaignSvc, targetingSvc, healthService, logger, metrics)
 
-	// Start server in goroutine
 	go func() {
 		logger.Info().
 			Str("host", cfg.Server.Host).
@@ -76,7 +67,6 @@ func main() {
 		}
 	}()
 
-	// Graceful shutdown
 	waitForShutdown(server, logger)
 }
 
@@ -128,8 +118,6 @@ func initRedis(cfg *config.Config, logger *logging.Logger) *redis.Client {
 		Password: cfg.Redis.Password,
 		DB:       cfg.Redis.DB,
 	})
-
-	// Test connection
 	if _, err := rdb.Ping(context.Background()).Result(); err != nil {
 		logger.Fatal().Err(err).Msg("Failed to connect to Redis")
 	}
@@ -139,15 +127,12 @@ func initRedis(cfg *config.Config, logger *logging.Logger) *redis.Client {
 }
 
 func initServices(db *sqlx.DB, rdb *redis.Client, cfg *config.Config, logger *logging.Logger, metrics *monitoring.Metrics) (*campaign.Service, *targeting.Evaluator) {
-	// Initialize repositories
 	campaignRepo := campaign.NewPostgresRepository(db)
 	ruleRepo := targeting.NewPostgresRuleRepository(db)
 
-	// Create cached repositories with Redis client directly
 	cachedCampaignRepo := campaign.NewCachedRepository(campaignRepo, rdb, 5*time.Minute)
 	cachedRuleRepo := targeting.NewCachedRuleRepository(ruleRepo, rdb, 10*time.Minute)
 
-	// Initialize services
 	campaignSvc := campaign.NewService(cachedCampaignRepo)
 	targetingSvc := targeting.NewEvaluator(cachedRuleRepo)
 
@@ -156,26 +141,20 @@ func initServices(db *sqlx.DB, rdb *redis.Client, cfg *config.Config, logger *lo
 }
 
 func initHTTPServer(cfg *config.Config, campaignSvc *campaign.Service, targetingSvc *targeting.Evaluator, healthService *health.HealthService, logger *logging.Logger, metrics *monitoring.Metrics) *http.Server {
-	// Create delivery service
 	deliverySvc := delivery.NewService(campaignSvc, targetingSvc)
 
-	// Create router
 	router := mux.NewRouter()
 
-	// Add middleware
 	router.Use(
 		loggingMiddleware(logger),
 		monitoring.MetricsMiddleware(metrics),
 	)
 
-	// Register handlers
 	router.PathPrefix("/v1/campaigns").Handler(campaign.MakeHTTPHandler(campaignSvc))
 	router.Handle("/v1/delivery", delivery.MakeHTTPHandler(deliverySvc))
 
-	// Add monitoring endpoints
 	router.Handle("/metrics", promhttp.Handler())
 
-	// Add health endpoints
 	router.Handle("/healthz", health.MakeHandler(healthService))
 
 	return &http.Server{

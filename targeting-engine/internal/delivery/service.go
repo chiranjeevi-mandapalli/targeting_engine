@@ -6,18 +6,15 @@ import (
 	"targeting-engine/internal/targeting"
 )
 
-// Service defines the interface for the delivery service
 type Service interface {
 	GetMatchingCampaigns(ctx context.Context, req Request) (Response, error)
 }
 
-// serviceImpl implements the Service interface
 type serviceImpl struct {
 	campaignSvc *campaign.Service
 	targeting   *targeting.Evaluator
 }
 
-// NewService creates a new service instance
 func NewService(campaignSvc *campaign.Service, targeting *targeting.Evaluator) Service {
 	return &serviceImpl{
 		campaignSvc: campaignSvc,

@@ -2,14 +2,14 @@ name: Go CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
 
 env:
   GO_VERSION: 1.20
   DOCKER_IMAGE: ghcr.io/your-username/targeting-engine
-  SEED_DATABASE: "false" # Set to "true" for dev/testing environments
+  SEED_DATABASE: "false" # Set to "true" for testing purpose
 
 jobs:
   test:

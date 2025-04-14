@@ -64,12 +64,10 @@ func (s *Seeder) SeedCampaigns(ctx context.Context) error {
 		}
 	}()
 
-	// Clear existing data
 	if _, err = tx.ExecContext(ctx, "DELETE FROM campaigns"); err != nil {
 		return fmt.Errorf("clearing campaigns: %w", err)
 	}
 
-	// Insert new data
 	for _, c := range campaigns {
 		query := `INSERT INTO campaigns (id, name, image_url, cta, status, created_at, updated_at) 
 		          VALUES ($1, $2, $3, $4, $5, $6, $7)`
@@ -92,14 +90,12 @@ func (s *Seeder) SeedCampaigns(ctx context.Context) error {
 
 func (s *Seeder) SeedTargetingRules(ctx context.Context) error {
 	rules := []targeting.Rule{
-		// Spotify: Include US and Canada
 		{
 			CampaignID: "spotify",
 			Dimension:  targeting.DimensionCountry,
 			Operation:  targeting.OperationInclude,
 			Values:     []string{"US", "Canada"},
 		},
-		// Duolingo: Include Android/iOS, Exclude US
 		{
 			CampaignID: "duolingo",
 			Dimension:  targeting.DimensionOS,
@@ -112,7 +108,6 @@ func (s *Seeder) SeedTargetingRules(ctx context.Context) error {
 			Operation:  targeting.OperationExclude,
 			Values:     []string{"US"},
 		},
-		// Subway Surfer: Include Android and specific app
 		{
 			CampaignID: "subwaysurfer",
 			Dimension:  targeting.DimensionOS,
@@ -136,13 +131,9 @@ func (s *Seeder) SeedTargetingRules(ctx context.Context) error {
 			tx.Rollback()
 		}
 	}()
-
-	// Clear existing data
 	if _, err = tx.ExecContext(ctx, "DELETE FROM targeting_rules"); err != nil {
 		return fmt.Errorf("clearing targeting rules: %w", err)
 	}
-
-	// Insert new data
 	for _, r := range rules {
 		query := `INSERT INTO targeting_rules (campaign_id, dimension, operation, values) 
 		          VALUES ($1, $2, $3, $4)`

@@ -77,7 +77,5 @@ func (r *CachedRepository) GetActive(ctx context.Context) ([]Campaign, error) {
 }
 
 func (r *CachedRepository) GetByIDs(ctx context.Context, ids []string) ([]Campaign, error) {
-	// Implementation with pipelined Redis MGET would go here
-	// For simplicity, we'll just fall back to the repository
 	return r.repo.GetByIDs(ctx, ids)
 }

@@ -54,8 +54,6 @@ func (r *CachedRuleRepository) GetByCampaignID(ctx context.Context, campaignID s
 }
 
 func (r *CachedRuleRepository) GetByCampaignIDs(ctx context.Context, campaignIDs []string) ([]Rule, error) {
-	// For simplicity, we'll just fall back to the repository
-	// In production, you might implement pipelined MGET
 	return r.repo.GetByCampaignIDs(ctx, campaignIDs)
 }
 
