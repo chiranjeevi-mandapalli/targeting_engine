@@ -22,6 +22,7 @@ type Config struct {
 		Password string
 		Name     string
 		SSLMode  string
+		Seed     bool
 	}
 
 	Redis struct {
