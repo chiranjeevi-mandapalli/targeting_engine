@@ -37,7 +37,6 @@ func (r *PostgresRuleRepository) GetByCampaignIDs(ctx context.Context, campaignI
 	if len(campaignIDs) == 0 {
 		return nil, nil
 	}
-
 	query, args, err := sqlx.In(`SELECT * FROM targeting_rules WHERE campaign_id IN (?)`, campaignIDs)
 	if err != nil {
 		return nil, fmt.Errorf("error building query: %w", err)
@@ -53,9 +52,10 @@ func (r *PostgresRuleRepository) GetByCampaignIDs(ctx context.Context, campaignI
 }
 
 func (r *PostgresRuleRepository) Store(ctx context.Context, rule *Rule) error {
-	const query = `INSERT INTO targeting_rules 
-		(campaign_id, dimension, operation, values)
-		VALUES (:campaign_id, :dimension, :operation, :values)`
+	const query = `
+		INSERT INTO targeting_rules (campaign_id, dimension, operation, values)
+		VALUES (:campaign_id, :dimension, :operation, :values)
+	`
 	_, err := r.db.NamedExecContext(ctx, query, rule)
 	if err != nil {
 		return fmt.Errorf("error storing rule: %w", err)

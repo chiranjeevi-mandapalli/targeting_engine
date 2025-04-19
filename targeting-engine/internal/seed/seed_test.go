@@ -12,7 +12,7 @@ import (
 )
 
 func TestSeeder(t *testing.T) {
-	db, err := sql.Open("postgres", "postgres://user:password@localhost:5432/testdb?sslmode=disable")
+	db, err := sql.Open("postgres", "postgres://postgres:9063770754@localhost:5432/targeting?sslmode=disable")
 	if err != nil {
 		t.Fatalf("Failed to connect to test database: %v", err)
 	}
@@ -32,7 +32,8 @@ func TestSeeder(t *testing.T) {
 			created_at TIMESTAMP WITH TIME ZONE NOT NULL,
 			updated_at TIMESTAMP WITH TIME ZONE NOT NULL
 		);
-
+		CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+		
 		CREATE TABLE targeting_rules (
 			id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 			campaign_id VARCHAR(255) NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,

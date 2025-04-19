@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -37,6 +39,22 @@ func main() {
 		logger.Fatal().Err(err).Msg("Failed to initialize database")
 	}
 	defer db.Close()
+
+	file, err := os.Open(cfg.Database.SQLFilePath)
+	if err != nil {
+		log.Fatalf("Failed to open SQL file: %v", err)
+	}
+	defer file.Close()
+
+	sqlBytes, err := io.ReadAll(file)
+	if err != nil {
+		log.Fatalf("Failed to read SQL file: %v", err)
+	}
+	sqlQueries := string(sqlBytes)
+
+	res, err := db.Exec(sqlQueries)
+	fmt.Println(res.RowsAffected())
+	fmt.Println("Database tables creation success")
 
 	if cfg.Database.Seed {
 		seedDatabase(db, logger)

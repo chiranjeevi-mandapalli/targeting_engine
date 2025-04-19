@@ -1,0 +1,302 @@
+{
+    "info": {
+      "name": "Targeting Engine API Tests",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "GET Delivery - Valid Request (Duolingo Campaign)",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": {
+            "raw": "http://localhost:8080/v1/delivery?app=com.abc.xyz&country=germany&os=android",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8080",
+            "path": ["v1", "delivery"],
+            "query": [
+              { "key": "app", "value": "com.abc.xyz" },
+              { "key": "country", "value": "germany" },
+              { "key": "os", "value": "android" }
+            ]
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 200', function () {",
+                "    pm.response.to.have.status(200);",
+                "});",
+                "pm.test('Response contains duolingo campaign', function () {",
+                "    var jsonData = pm.response.json();",
+                "    pm.expect(jsonData).to.be.an('array');",
+                "    pm.expect(jsonData).to.deep.include({",
+                "        cid: 'duolingo',",
+                "        img: 'https://somelink2',",
+                "        cta: 'Install'",
+                "    });",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ]
+      },
+      {
+        "name": "GET Delivery - Valid Request (Spotify & Subway Surfer)",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": {
+            "raw": "http://localhost:8080/v1/delivery?app=com.gametion.ludokinggame&country=us&os=android",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8080",
+            "path": ["v1", "delivery"],
+            "query": [
+              { "key": "app", "value": "com.gametion.ludokinggame" },
+              { "key": "country", "value": "us" },
+              { "key": "os", "value": "android" }
+            ]
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 200', function () {",
+                "    pm.response.to.have.status(200);",
+                "});",
+                "pm.test('Response contains spotify and subwaysurfer campaigns', function () {",
+                "    var jsonData = pm.response.json();",
+                "    pm.expect(jsonData).to.be.an('array');",
+                "    pm.expect(jsonData).to.deep.include.members([",
+                "        { cid: 'spotify', img: 'https://somelink', cta: 'Download' },",
+                "        { cid: 'subwaysurfer', img: 'https://somelink3', cta: 'Play' }",
+                "    ]);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ]
+      },
+      {
+        "name": "GET Delivery - Missing Parameter",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": {
+            "raw": "http://localhost:8080/v1/delivery?country=germany&os=android",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8080",
+            "path": ["v1", "delivery"],
+            "query": [
+              { "key": "country", "value": "germany" },
+              { "key": "os", "value": "android" }
+            ]
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 400', function () {",
+                "    pm.response.to.have.status(400);",
+                "});",
+                "pm.test('Response contains error message', function () {",
+                "    var jsonData = pm.response.json();",
+                "    pm.expect(jsonData).to.have.property('error', 'missing app param');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ]
+      },
+      {
+        "name": "GET Delivery - No Matching Campaigns",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": {
+            "raw": "http://localhost:8080/v1/delivery?app=com.abc.xyz&country=canada&os=web",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8080",
+            "path": ["v1", "delivery"],
+            "query": [
+              { "key": "app", "value": "com.abc.xyz" },
+              { "key": "country", "value": "canada" },
+              { "key": "os", "value": "web" }
+            ]
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 204', function () {",
+                "    pm.response.to.have.status(204);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ]
+      },
+      {
+        "name": "POST Campaign - Create Spotify Campaign",
+        "request": {
+          "method": "POST",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"cid\":\"spotify\",\"name\":\"Spotify - Music for everyone\",\"img\":\"https://somelink\",\"cta\":\"Download\",\"status\":\"ACTIVE\"}"
+          },
+          "url": {
+            "raw": "http://localhost:8080/v1/campaigns",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8080",
+            "path": ["v1", "campaigns"]
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 201', function () {",
+                "    pm.response.to.have.status(201);",
+                "});",
+                "pm.test('Response contains campaign ID', function () {",
+                "    var jsonData = pm.response.json();",
+                "    pm.expect(jsonData).to.have.property('cid', 'spotify');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ]
+      },
+      {
+        "name": "POST Targeting Rule - Spotify Rule",
+        "request": {
+          "method": "POST",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"cid\":\"spotify\",\"rules\":{\"include\":{\"country\":[\"US\",\"Canada\"]}}}"
+          },
+          "url": {
+            "raw": "http://localhost:8080/v1/targeting-rules",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8080",
+            "path": ["v1", "targeting-rules"]
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 201', function () {",
+                "    pm.response.to.have.status(201);",
+                "});",
+                "pm.test('Response contains rule for spotify', function () {",
+                "    var jsonData = pm.response.json();",
+                "    pm.expect(jsonData).to.have.property('cid', 'spotify');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ]
+      },
+      {
+        "name": "PUT Campaign - Update Spotify Status to INACTIVE",
+        "request": {
+          "method": "PUT",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"cid\":\"spotify\",\"name\":\"Spotify - Music for everyone\",\"img\":\"https://somelink\",\"cta\":\"Download\",\"status\":\"INACTIVE\"}"
+          },
+          "url": {
+            "raw": "http://localhost:8080/v1/campaigns/spotify",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8080",
+            "path": ["v1", "campaigns", "spotify"]
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 200', function () {",
+                "    pm.response.to.have.status(200);",
+                "});",
+                "pm.test('Response confirms updated status', function () {",
+                "    var jsonData = pm.response.json();",
+                "    pm.expect(jsonData).to.have.property('status', 'INACTIVE');",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ]
+      },
+      {
+        "name": "DELETE Campaign - Remove Spotify Campaign",
+        "request": {
+          "method": "DELETE",
+          "header": [],
+          "url": {
+            "raw": "http://localhost:8080/v1/campaigns/spotify",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8080",
+            "path": ["v1", "campaigns", "spotify"]
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status code is 204', function () {",
+                "    pm.response.to.have.status(204);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ]
+      }
+    ]
+  }

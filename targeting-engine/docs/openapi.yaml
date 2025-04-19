@@ -1,0 +1,206 @@
+openapi: 3.0.3
+info:
+  title: Targeting Engine API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /v1/delivery:
+    get:
+      summary: Get campaigns matching targeting rules
+      parameters:
+        - name: app
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: os
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of matching campaigns
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    cid:
+                      type: string
+                    img:
+                      type: string
+                    cta:
+                      type: string
+        '204':
+          description: No matching campaigns
+        '400':
+          description: Missing required parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /v1/campaigns:
+    post:
+      summary: Create a new campaign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cid:
+                  type: string
+                name:
+                  type: string
+                img:
+                  type: string
+                cta:
+                  type: string
+                status:
+                  type: string
+                  enum: [ACTIVE, INACTIVE]
+              required: [cid, name, img, cta, status]
+      responses:
+        '201':
+          description: Campaign created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cid:
+                    type: string
+        '400':
+          description: Invalid request
+  /v1/campaigns/{cid}:
+    put:
+      summary: Update an existing campaign
+      parameters:
+        - name: cid
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cid:
+                  type: string
+                name:
+                  type: string
+                img:
+                  type: string
+                cta:
+                  type: string
+                status:
+                  type: string
+                  enum: [ACTIVE, INACTIVE]
+              required: [cid, name, img, cta, status]
+      responses:
+        '200':
+          description: Campaign updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cid:
+                    type: string
+                  name:
+                    type: string
+                  img:
+                    type: string
+                  cta:
+                    type: string
+                  status:
+                    type: string
+        '404':
+          description: Campaign not found
+    delete:
+      summary: Delete a campaign
+      parameters:
+        - name: cid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Campaign deleted
+        '404':
+          description: Campaign not found
+  /v1/targeting-rules:
+    post:
+      summary: Create a new targeting rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cid:
+                  type: string
+                rules:
+                  type: object
+                  properties:
+                    include:
+                      type: object
+                      properties:
+                        country:
+                          type: array
+                          items:
+                            type: string
+                        os:
+                          type: array
+                          items:
+                            type: string
+                        app:
+                          type: array
+                          items:
+                            type: string
+                    exclude:
+                      type: object
+                      properties:
+                        country:
+                          type: array
+                          items:
+                            type: string
+                        os:
+                          type: array
+                          items:
+                            type: string
+                        app:
+                          type: array
+                          items:
+                            type: string
+              required: [cid, rules]
+      responses:
+        '201':
+          description: Targeting rule created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cid:
+                    type: string
+        '400':
+          description: Invalid request
