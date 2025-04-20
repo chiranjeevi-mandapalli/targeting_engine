@@ -55,7 +55,7 @@ func Load() (*Config, error) {
 
 	cfg.Redis.Host = getEnv("REDIS_HOST", "localhost")
 	cfg.Redis.Port = getEnvAsInt("REDIS_PORT", 6379)
-	cfg.Redis.Password = getEnv("REDIS_PASSWORD", "")
+	cfg.Redis.Password = getEnv("REDIS_PASSWORD", "9063770754")
 	cfg.Redis.DB = getEnvAsInt("REDIS_DB", 0)
 
 	return &cfg, nil

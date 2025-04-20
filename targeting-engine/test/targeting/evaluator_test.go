@@ -2,6 +2,7 @@ package targeting_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"targeting-engine/internal/targeting"
@@ -35,6 +36,10 @@ func (m *MockRuleRepository) DeleteByCampaign(ctx context.Context, campaignID st
 }
 
 func TestEvaluator_Evaluate(t *testing.T) {
+	raw := func(values []string) json.RawMessage {
+		bytes, _ := json.Marshal(values)
+		return json.RawMessage(bytes)
+	}
 	mockRepo := new(MockRuleRepository)
 	evaluator := targeting.NewEvaluator(mockRepo)
 
@@ -54,7 +59,7 @@ func TestEvaluator_Evaluate(t *testing.T) {
 					CampaignID: "camp1",
 					Dimension:  targeting.DimensionCountry,
 					Operation:  targeting.OperationInclude,
-					Values:     []string{"US"},
+					Values:     raw([]string{"US"}),
 				},
 			},
 			country:        "US",
@@ -68,7 +73,7 @@ func TestEvaluator_Evaluate(t *testing.T) {
 					CampaignID: "camp1",
 					Dimension:  targeting.DimensionCountry,
 					Operation:  targeting.OperationExclude,
-					Values:     []string{"US"},
+					Values:     raw([]string{"US"}),
 				},
 			},
 			country:        "US",
@@ -82,13 +87,13 @@ func TestEvaluator_Evaluate(t *testing.T) {
 					CampaignID: "camp1",
 					Dimension:  targeting.DimensionCountry,
 					Operation:  targeting.OperationInclude,
-					Values:     []string{"US"},
+					Values:     raw([]string{"US"}),
 				},
 				{
 					CampaignID: "camp1",
 					Dimension:  targeting.DimensionOS,
 					Operation:  targeting.OperationExclude,
-					Values:     []string{"iOS"},
+					Values:     raw([]string{"iOS"}),
 				},
 			},
 			country:        "US",

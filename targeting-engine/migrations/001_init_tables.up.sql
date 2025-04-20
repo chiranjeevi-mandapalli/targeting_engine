@@ -33,10 +33,18 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_campaign_timestamp
-BEFORE UPDATE ON campaigns
-FOR EACH ROW
-EXECUTE FUNCTION update_timestamp();
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgname = 'update_campaign_timestamp'
+  ) THEN
+    CREATE TRIGGER update_campaign_timestamp
+    BEFORE UPDATE ON campaigns
+    FOR EACH ROW
+    EXECUTE FUNCTION update_timestamp();
+  END IF;
+END$$;
 
 CREATE OR REPLACE FUNCTION enforce_no_conflicting_rules()
 RETURNS TRIGGER AS $$
@@ -53,7 +61,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_no_conflicting_rules
-BEFORE INSERT OR UPDATE ON targeting_rules
-FOR EACH ROW
-EXECUTE FUNCTION enforce_no_conflicting_rules();
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgname = 'trg_no_conflicting_rules'
+  ) THEN
+    CREATE TRIGGER trg_no_conflicting_rules
+    BEFORE INSERT OR UPDATE ON targeting_rules
+    FOR EACH ROW
+    EXECUTE FUNCTION enforce_no_conflicting_rules();
+  END IF;
+END$$;

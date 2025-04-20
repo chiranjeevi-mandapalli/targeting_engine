@@ -1,6 +1,9 @@
 package targeting
 
-import "errors"
+import (
+	"encoding/json"
+	"errors"
+)
 
 type Dimension string
 
@@ -18,10 +21,10 @@ const (
 )
 
 type Rule struct {
-	CampaignID string    `json:"campaign_id" db:"campaign_id"`
-	Dimension  Dimension `json:"dimension" db:"dimension"`
-	Operation  Operation `json:"operation" db:"operation"`
-	Values     []string  `json:"values" db:"values"`
+	CampaignID string          `json:"campaign_id" db:"campaign_id"`
+	Dimension  Dimension       `json:"dimension" db:"dimension"`
+	Operation  Operation       `json:"operation" db:"operation"`
+	Values     json.RawMessage `json:"values" db:"values"`
 }
 
 var (

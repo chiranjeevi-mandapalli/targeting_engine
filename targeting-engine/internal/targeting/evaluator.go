@@ -2,6 +2,7 @@ package targeting
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -66,7 +67,13 @@ func matchesRule(rule Rule, app, country, os string) bool {
 		return true
 	}
 
-	for _, v := range rule.Values {
+	var values []string
+	if err := json.Unmarshal(rule.Values, &values); err != nil {
+		// Fail open: if values can't be decoded, don't filter out the campaign
+		return true
+	}
+
+	for _, v := range values {
 		if strings.EqualFold(v, value) {
 			return rule.Operation == OperationInclude
 		}

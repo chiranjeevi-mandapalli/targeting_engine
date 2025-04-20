@@ -167,12 +167,14 @@ func initHTTPServer(cfg *config.Config, campaignSvc *campaign.Service, targeting
 		monitoring.MetricsMiddleware(metrics),
 	)
 
-	router.PathPrefix("/v1/campaigns").Handler(campaign.MakeHTTPHandler(campaignSvc))
+	router.Handle("/v1/campaigns", campaign.MakeGetAllHTTPHandler(campaignSvc))
+	router.Handle("/v1/campaigns/{id}", campaign.MakeGetHTTPHandler(campaignSvc))
+
 	router.Handle("/v1/delivery", delivery.MakeHTTPHandler(deliverySvc))
 
 	router.Handle("/metrics", promhttp.Handler())
 
-	router.Handle("/healthz", health.MakeHandler(healthService))
+	router.Handle("/health", health.MakeHandler(healthService))
 
 	return &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),

@@ -37,17 +37,20 @@ func (r *PostgresRuleRepository) GetByCampaignIDs(ctx context.Context, campaignI
 	if len(campaignIDs) == 0 {
 		return nil, nil
 	}
-	query, args, err := sqlx.In(`SELECT * FROM targeting_rules WHERE campaign_id IN (?)`, campaignIDs)
+
+	query, args, err := sqlx.In(`SELECT campaign_id, dimension, operation, values FROM targeting_rules WHERE campaign_id IN (?)`, campaignIDs)
 	if err != nil {
 		return nil, fmt.Errorf("error building query: %w", err)
 	}
 
 	query = r.db.Rebind(query)
+
 	var rules []Rule
 	err = r.db.SelectContext(ctx, &rules, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("error getting rules: %w", err)
 	}
+
 	return rules, nil
 }
 

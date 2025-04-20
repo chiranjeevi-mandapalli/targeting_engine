@@ -11,21 +11,28 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func MakeHTTPHandler(s *Service) http.Handler {
+func MakeGetHTTPHandler(s *Service) http.Handler {
 	r := mux.NewRouter()
 
-	r.Methods("GET").Path("/campaigns/{id}").Handler(httptransport.NewServer(
+	campaignHandler := httptransport.NewServer(
 		makeGetCampaignEndpoint(s),
 		decodeGetCampaignRequest,
 		encodeResponse,
-	))
+	)
+	r.Handle("/v1/campaigns/{id}", campaignHandler).Methods("GET")
+	return r
+}
 
-	r.Methods("GET").Path("/campaigns").Handler(httptransport.NewServer(
+func MakeGetAllHTTPHandler(s *Service) http.Handler {
+	r := mux.NewRouter()
+
+	campaignGetAllHandler := httptransport.NewServer(
 		makeGetActiveCampaignsEndpoint(s),
 		decodeGetActiveCampaignsRequest,
 		encodeResponse,
-	))
+	)
 
+	r.Handle("/v1/campaigns", campaignGetAllHandler).Methods("GET")
 	return r
 }
 

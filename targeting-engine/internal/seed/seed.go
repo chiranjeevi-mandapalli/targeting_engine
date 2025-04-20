@@ -3,8 +3,8 @@ package seed
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
 	"targeting-engine/internal/campaign"
@@ -89,36 +89,41 @@ func (s *Seeder) SeedCampaigns(ctx context.Context) error {
 }
 
 func (s *Seeder) SeedTargetingRules(ctx context.Context) error {
+	raw := func(values []string) json.RawMessage {
+		bytes, _ := json.Marshal(values)
+		return json.RawMessage(bytes)
+	}
+
 	rules := []targeting.Rule{
 		{
 			CampaignID: "spotify",
 			Dimension:  targeting.DimensionCountry,
 			Operation:  targeting.OperationInclude,
-			Values:     []string{"US", "Canada"},
+			Values:     raw([]string{"US", "Canada"}),
 		},
 		{
 			CampaignID: "duolingo",
 			Dimension:  targeting.DimensionOS,
 			Operation:  targeting.OperationInclude,
-			Values:     []string{"Android", "iOS"},
+			Values:     raw([]string{"Android", "iOS"}),
 		},
 		{
 			CampaignID: "duolingo",
 			Dimension:  targeting.DimensionCountry,
 			Operation:  targeting.OperationExclude,
-			Values:     []string{"US"},
+			Values:     raw([]string{"US"}),
 		},
 		{
 			CampaignID: "subwaysurfer",
 			Dimension:  targeting.DimensionOS,
 			Operation:  targeting.OperationInclude,
-			Values:     []string{"Android"},
+			Values:     raw([]string{"Android"}),
 		},
 		{
 			CampaignID: "subwaysurfer",
 			Dimension:  targeting.DimensionApp,
 			Operation:  targeting.OperationInclude,
-			Values:     []string{"com.gametion.ludokinggame"},
+			Values:     raw([]string{"com.gametion.ludokinggame"}),
 		},
 	}
 
@@ -128,12 +133,14 @@ func (s *Seeder) SeedTargetingRules(ctx context.Context) error {
 	}
 	defer func() {
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 		}
 	}()
+
 	if _, err = tx.ExecContext(ctx, "DELETE FROM targeting_rules"); err != nil {
 		return fmt.Errorf("clearing targeting rules: %w", err)
 	}
+
 	for _, r := range rules {
 		query := `INSERT INTO targeting_rules (campaign_id, dimension, operation, values) 
 		          VALUES ($1, $2, $3, $4)`
@@ -141,7 +148,7 @@ func (s *Seeder) SeedTargetingRules(ctx context.Context) error {
 			r.CampaignID,
 			string(r.Dimension),
 			string(r.Operation),
-			r.Values,
+			r.Values, // Already json.RawMessage (a []byte)
 		)
 		if err != nil {
 			return fmt.Errorf("inserting rule for campaign %s: %w", r.CampaignID, err)
@@ -149,14 +156,4 @@ func (s *Seeder) SeedTargetingRules(ctx context.Context) error {
 	}
 
 	return tx.Commit()
-}
-
-func SeedDatabase(db *sql.DB) {
-	seeder := NewSeeder(db)
-	ctx := context.Background()
-
-	if err := seeder.SeedAll(ctx); err != nil {
-		log.Fatalf("Failed to seed database: %v", err)
-	}
-	log.Println("Database seeded successfully")
 }
