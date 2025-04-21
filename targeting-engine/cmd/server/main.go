@@ -146,7 +146,7 @@ func initRedis(cfg *config.Config, logger *logging.Logger) *redis.Client {
 	return rdb
 }
 
-func initServices(db *sqlx.DB, rdb *redis.Client, cfg *config.Config, logger *logging.Logger, metrics *monitoring.Metrics) (*campaign.Service, *targeting.Evaluator) {
+func initServices(db *sqlx.DB, rdb *redis.Client, cfg *config.Config, logger *logging.Logger, metrics *monitoring.Metrics) (*campaign.Service, *targeting.RuleEngine) {
 	campaignRepo := campaign.NewPostgresRepository(db)
 	ruleRepo := targeting.NewPostgresRuleRepository(db)
 
@@ -155,13 +155,13 @@ func initServices(db *sqlx.DB, rdb *redis.Client, cfg *config.Config, logger *lo
 	cachedRuleRepo := targeting.NewCachedRuleRepository(ruleRepo, rdb, 10*time.Minute, metrics)
 
 	campaignSvc := campaign.NewService(cachedCampaignRepo)
-	targetingSvc := targeting.NewEvaluator(cachedRuleRepo)
+	targetingSvc := targeting.NewRuleEngine(cachedRuleRepo)
 
 	logger.Info().Msg("Services initialized")
 	return campaignSvc, targetingSvc
 }
 
-func initHTTPServer(cfg *config.Config, campaignSvc *campaign.Service, targetingSvc *targeting.Evaluator,
+func initHTTPServer(cfg *config.Config, campaignSvc *campaign.Service, targetingSvc *targeting.RuleEngine,
 	healthService *health.HealthService, logger *logging.Logger, metrics *monitoring.Metrics) *http.Server {
 
 	deliverySvc := delivery.NewService(campaignSvc, targetingSvc)

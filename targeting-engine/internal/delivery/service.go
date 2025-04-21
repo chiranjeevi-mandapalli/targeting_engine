@@ -12,10 +12,10 @@ type Service interface {
 
 type serviceImpl struct {
 	campaignSvc *campaign.Service
-	targeting   *targeting.Evaluator
+	targeting   *targeting.RuleEngine
 }
 
-func NewService(campaignSvc *campaign.Service, targeting *targeting.Evaluator) Service {
+func NewService(campaignSvc *campaign.Service, targeting *targeting.RuleEngine) Service {
 	return &serviceImpl{
 		campaignSvc: campaignSvc,
 		targeting:   targeting,

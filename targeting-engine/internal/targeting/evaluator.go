@@ -7,15 +7,15 @@ import (
 	"strings"
 )
 
-type Evaluator struct {
+type RuleEngine struct {
 	ruleRepo RuleRepository
 }
 
-func NewEvaluator(ruleRepo RuleRepository) *Evaluator {
-	return &Evaluator{ruleRepo: ruleRepo}
+func NewRuleEngine(ruleRepo RuleRepository) *RuleEngine {
+	return &RuleEngine{ruleRepo: ruleRepo}
 }
 
-func (e *Evaluator) Evaluate(ctx context.Context, app, country, os string, campaignIDs []string) ([]string, error) {
+func (e *RuleEngine) Evaluate(ctx context.Context, app, country, os string, campaignIDs []string) ([]string, error) {
 	rules, err := e.ruleRepo.GetByCampaignIDs(ctx, campaignIDs)
 	if err != nil {
 		return nil, fmt.Errorf("error getting rules: %w", err)

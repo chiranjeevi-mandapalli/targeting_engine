@@ -41,7 +41,7 @@ func TestEvaluator_Evaluate(t *testing.T) {
 		return json.RawMessage(bytes)
 	}
 	mockRepo := new(MockRuleRepository)
-	evaluator := targeting.NewEvaluator(mockRepo)
+	evaluator := targeting.NewRuleEngine(mockRepo)
 
 	tests := []struct {
 		name           string
