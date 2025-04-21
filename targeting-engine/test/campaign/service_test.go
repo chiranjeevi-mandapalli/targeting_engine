@@ -29,6 +29,11 @@ func (m *MockRepository) GetByIDs(ctx context.Context, ids []string) ([]campaign
 	return args.Get(0).([]campaign.Campaign), args.Error(1)
 }
 
+func (m *MockRepository) CountActiveCampaigns(ctx context.Context) (int, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(int), args.Error(1)
+}
+
 func TestService_GetCampaignByID(t *testing.T) {
 	mockRepo := new(MockRepository)
 	svc := campaign.NewService(mockRepo)

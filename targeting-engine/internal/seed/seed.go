@@ -34,21 +34,21 @@ func (s *Seeder) SeedCampaigns(ctx context.Context) error {
 		{
 			ID:       "spotify",
 			Name:     "Spotify - Music for everyone",
-			ImageURL: "https://somelink",
+			ImageURL: "https://spotify.com",
 			CTA:      "Download",
 			Status:   campaign.StatusActive,
 		},
 		{
 			ID:       "duolingo",
 			Name:     "Duolingo: Best way to learn",
-			ImageURL: "https://somelink2",
+			ImageURL: "https://duolingo.com",
 			CTA:      "Install",
 			Status:   campaign.StatusActive,
 		},
 		{
 			ID:       "subwaysurfer",
 			Name:     "Subway Surfer",
-			ImageURL: "https://somelink3",
+			ImageURL: "https://subwaysurfer.com",
 			CTA:      "Play",
 			Status:   campaign.StatusActive,
 		},
@@ -148,7 +148,7 @@ func (s *Seeder) SeedTargetingRules(ctx context.Context) error {
 			r.CampaignID,
 			string(r.Dimension),
 			string(r.Operation),
-			r.Values, // Already json.RawMessage (a []byte)
+			r.Values,
 		)
 		if err != nil {
 			return fmt.Errorf("inserting rule for campaign %s: %w", r.CampaignID, err)

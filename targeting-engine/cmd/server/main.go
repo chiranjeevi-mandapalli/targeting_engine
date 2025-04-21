@@ -71,6 +71,9 @@ func main() {
 
 	campaignSvc, targetingSvc := initServices(db, redisClient, cfg, logger, metrics)
 
+	// Start background task to update active campaigns metric
+	go updateActiveCampaigns(campaignSvc, metrics, logger)
+
 	server := initHTTPServer(cfg, campaignSvc, targetingSvc, healthService, logger, metrics)
 
 	go func() {
@@ -147,8 +150,9 @@ func initServices(db *sqlx.DB, rdb *redis.Client, cfg *config.Config, logger *lo
 	campaignRepo := campaign.NewPostgresRepository(db)
 	ruleRepo := targeting.NewPostgresRuleRepository(db)
 
-	cachedCampaignRepo := campaign.NewCachedRepository(campaignRepo, rdb, 5*time.Minute)
-	cachedRuleRepo := targeting.NewCachedRuleRepository(ruleRepo, rdb, 10*time.Minute)
+	// Pass metrics to cached repositories for cache hit/miss tracking
+	cachedCampaignRepo := campaign.NewCachedRepository(campaignRepo, rdb, 5*time.Minute, metrics)
+	cachedRuleRepo := targeting.NewCachedRuleRepository(ruleRepo, rdb, 10*time.Minute, metrics)
 
 	campaignSvc := campaign.NewService(cachedCampaignRepo)
 	targetingSvc := targeting.NewEvaluator(cachedRuleRepo)
@@ -157,23 +161,20 @@ func initServices(db *sqlx.DB, rdb *redis.Client, cfg *config.Config, logger *lo
 	return campaignSvc, targetingSvc
 }
 
-func initHTTPServer(cfg *config.Config, campaignSvc *campaign.Service, targetingSvc *targeting.Evaluator, healthService *health.HealthService, logger *logging.Logger, metrics *monitoring.Metrics) *http.Server {
+func initHTTPServer(cfg *config.Config, campaignSvc *campaign.Service, targetingSvc *targeting.Evaluator,
+	healthService *health.HealthService, logger *logging.Logger, metrics *monitoring.Metrics) *http.Server {
+
 	deliverySvc := delivery.NewService(campaignSvc, targetingSvc)
-
 	router := mux.NewRouter()
-
 	router.Use(
-		loggingMiddleware(logger),
+		loggingMiddleware(logger, metrics),
 		monitoring.MetricsMiddleware(metrics),
 	)
 
 	router.Handle("/v1/campaigns", campaign.MakeGetAllHTTPHandler(campaignSvc))
 	router.Handle("/v1/campaigns/{id}", campaign.MakeGetHTTPHandler(campaignSvc))
-
 	router.Handle("/v1/delivery", delivery.MakeHTTPHandler(deliverySvc))
-
 	router.Handle("/metrics", promhttp.Handler())
-
 	router.Handle("/health", health.MakeHandler(healthService))
 
 	return &http.Server{
@@ -185,13 +186,12 @@ func initHTTPServer(cfg *config.Config, campaignSvc *campaign.Service, targeting
 	}
 }
 
-func loggingMiddleware(logger *logging.Logger) func(http.Handler) http.Handler {
+func loggingMiddleware(logger *logging.Logger, metrics *monitoring.Metrics) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
-
+			metrics.IncrementHTTPRequests(r.Method, r.URL.Path, "200")
 			next.ServeHTTP(w, r)
-
 			logger.Info().
 				Str("method", r.Method).
 				Str("path", r.URL.Path).
@@ -216,4 +216,25 @@ func waitForShutdown(server *http.Server, logger *logging.Logger) {
 	}
 
 	logger.Info().Msg("Server exited properly")
+}
+
+// updateActiveCampaigns periodically updates the campaigns_active_total metric
+func updateActiveCampaigns(svc *campaign.Service, metrics *monitoring.Metrics, logger *logging.Logger) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			count, err := svc.CountActiveCampaigns(ctx)
+			if err != nil {
+				logger.Error().Err(err).Msg("Failed to count active campaigns")
+				continue
+			}
+			metrics.SetActiveCampaigns(float64(count))
+			logger.Debug().Int("count", count).Msg("Updated active campaigns metric")
+			cancel()
+		}
+	}
 }

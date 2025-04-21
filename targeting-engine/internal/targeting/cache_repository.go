@@ -5,22 +5,27 @@ import (
 	"encoding/json"
 	"time"
 
+	"targeting-engine/internal/monitoring"
+
 	"github.com/go-redis/redis/v8"
 )
 
 type CachedRuleRepository struct {
-	repo   RuleRepository
-	cache  *redis.Client
-	ttl    time.Duration
-	prefix string
+	repo    RuleRepository
+	cache   *redis.Client
+	ttl     time.Duration
+	prefix  string
+	metrics *monitoring.Metrics // Added for metrics tracking
 }
 
-func NewCachedRuleRepository(repo RuleRepository, cache *redis.Client, ttl time.Duration) *CachedRuleRepository {
+// NewCachedRuleRepository creates a new CachedRuleRepository with metrics support
+func NewCachedRuleRepository(repo RuleRepository, cache *redis.Client, ttl time.Duration, metrics *monitoring.Metrics) *CachedRuleRepository {
 	return &CachedRuleRepository{
-		repo:   repo,
-		cache:  cache,
-		ttl:    ttl,
-		prefix: "targeting:",
+		repo:    repo,
+		cache:   cache,
+		ttl:     ttl,
+		prefix:  "targeting:",
+		metrics: metrics,
 	}
 }
 
@@ -30,14 +35,25 @@ func (r *CachedRuleRepository) cacheKey(campaignID string) string {
 
 func (r *CachedRuleRepository) GetByCampaignID(ctx context.Context, campaignID string) ([]Rule, error) {
 	key := r.cacheKey(campaignID)
+	start := time.Now()
+
+	// Try to get from cache
 	val, err := r.cache.Get(ctx, key).Bytes()
 	if err == nil {
 		var rules []Rule
 		if err := json.Unmarshal(val, &rules); err == nil {
+			r.metrics.IncrementCacheHits("rule")
+			r.metrics.ObserveCacheLatency("rule", time.Since(start).Seconds())
 			return rules, nil
 		}
 	}
 
+	// Cache miss
+	if err == redis.Nil {
+		r.metrics.IncrementCacheMisses("rule")
+	}
+
+	// Fetch from repository
 	rules, err := r.repo.GetByCampaignID(ctx, campaignID)
 	if err != nil {
 		return nil, err
@@ -50,6 +66,7 @@ func (r *CachedRuleRepository) GetByCampaignID(ctx context.Context, campaignID s
 		}
 	}
 
+	r.metrics.ObserveCacheLatency("rule", time.Since(start).Seconds())
 	return rules, nil
 }
 

@@ -30,3 +30,7 @@ func (s *Service) GetCampaignsByIDs(ctx context.Context, ids []string) ([]Campai
 	}
 	return s.repo.GetByIDs(ctx, ids)
 }
+
+func (s *Service) CountActiveCampaigns(ctx context.Context) (int, error) {
+	return s.repo.CountActiveCampaigns(ctx)
+}

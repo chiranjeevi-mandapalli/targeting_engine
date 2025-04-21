@@ -12,6 +12,7 @@ type Repository interface {
 	GetByID(ctx context.Context, id string) (*Campaign, error)
 	GetActive(ctx context.Context) ([]Campaign, error)
 	GetByIDs(ctx context.Context, ids []string) ([]Campaign, error)
+	CountActiveCampaigns(ctx context.Context) (int, error)
 }
 
 type PostgresRepository struct {
@@ -62,4 +63,13 @@ func (r *PostgresRepository) GetByIDs(ctx context.Context, ids []string) ([]Camp
 		return nil, fmt.Errorf("error getting campaigns by IDs: %w", err)
 	}
 	return campaigns, nil
+}
+
+func (r *PostgresRepository) CountActiveCampaigns(ctx context.Context) (int, error) {
+	var count int
+	err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM campaigns WHERE status = 'ACTIVE'").Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }

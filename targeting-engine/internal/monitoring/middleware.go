@@ -1,6 +1,7 @@
 package monitoring
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// MetricsMiddleware instruments HTTP requests with Prometheus metrics
 func MetricsMiddleware(metrics *Metrics) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +20,7 @@ func MetricsMiddleware(metrics *Metrics) func(http.Handler) http.Handler {
 				labels := prometheus.Labels{
 					"method": r.Method,
 					"path":   r.URL.Path,
-					"status": http.StatusText(ww.Status()),
+					"status": fmt.Sprintf("%d", ww.Status()),
 				}
 
 				metrics.HTTPRequests.With(labels).Inc()
