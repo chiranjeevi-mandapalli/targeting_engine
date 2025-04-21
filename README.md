@@ -16,6 +16,7 @@ docker run -d --name redis-server -p 6379:6379 -v redis_data:/data redis:latest 
 
 # For metrics we are using prometheus anf grafana run 
 docker compose up -d
+docker compose down
 # you can accces these
 Prometheus: http://localhost:9090
 Grafana: http://localhost:3000
